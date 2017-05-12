@@ -20,7 +20,7 @@ public class Game
     private final int DEFAULT_SIZE = 5;
     private int oldSize = DEFAULT_SIZE;
     private int foodOnScreen;
-    private final int MAX_FOOD = 10;
+    private final int MAX_FOOD = 1;
     private int invincibility;
     private char SNAKE = 'o';
     private char GRID = '-';
@@ -44,6 +44,7 @@ public class Game
         //mongooses.add(new Mongoose(new Location(5, 5), grid)); // add 1 mongoose to start
 
         snake = new Snake(new Location(10, 10), grid);
+        grid.setScore(snake.getSize());
         //for (int i=0; i<DEFAULT_SIZE-1; i++) {
         //    snake.grow();
         //}
@@ -72,7 +73,7 @@ public class Game
 
             while (true) {
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(150);
                 } catch (Exception e) {
                     e.printStackTrace();
                     return;
@@ -115,6 +116,11 @@ public class Game
                 char nextItem = grid.get(newLocation);
                 if (nextItem == FOOD) {
                     snake.grow();
+                    grid.setScore(snake.getSize());
+                    foodOnScreen --;
+                } else if (nextItem == SNAKE) {
+                    System.out.println("YOU LOSE!");
+                    break;
                 }
 
                 snake.move(newLocation);
@@ -163,11 +169,8 @@ public class Game
         int randInt = rand.nextInt(20);
 
         if (foodOnScreen < MAX_FOOD && grid.get(loc) == GRID) {
-            if (randInt < 10) {
-                grid.set(loc, FOOD);
-                foodOnScreen ++;
-
-            }
+            grid.set(loc, FOOD);
+            foodOnScreen ++;
         }
     }
 

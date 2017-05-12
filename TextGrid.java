@@ -2,10 +2,13 @@
 
 public class TextGrid {
     private ConsoleStty listener;
+    private int score;
     private int height;
     private int width;
     char[][] grid;
     private char GRID = '-';
+    private final String HEADER_TEXT = "Snake : (c) Dan Nakajima 2017";
+    private String SIZE_TEXT = "Size: ";
 
     public TextGrid(int height, int width) {
         this.listener = new ConsoleStty();
@@ -55,7 +58,30 @@ public class TextGrid {
         }
     }
 
+    public void setScore(int score) {
+        this.score = score;
+    }
+
+    public int getScore() {
+        return this.score;
+    }
+
+    private String getHeader() {
+        StringBuilder header = new StringBuilder();
+        String fullHeader = HEADER_TEXT + " : " + SIZE_TEXT + score;
+        for (int i=0; i<=width - fullHeader.length(); i++) {
+            if (i == (width - fullHeader.length())/2) {
+                header.append(fullHeader);
+            } else {
+                header.append("#");
+            }
+        }
+
+        return header.toString();
+    }
+
     public void print() {
+        System.out.println(getHeader());
         for (char[] row : grid) {
             String line = "";
             for (char col : row) {
