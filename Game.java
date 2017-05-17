@@ -2,13 +2,13 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.*;
+import java.lang.Runtime;
+import java.lang.Thread;
 
-public class Game
-{
+public class Game {
 
     private TextGrid grid;
     private Snake snake;
-    private ArrayList<Mongoose> mongooses = new ArrayList<>(1);
     private Location newLocation; // this makes it so the snake continues in the same direction until a new key is pressed
 
     private int msElapsed;
@@ -22,21 +22,18 @@ public class Game
     private int foodOnScreen;
     private final int MAX_FOOD = 1;
     private int invincibility;
-    private char SNAKE = 'o';
-    private char GRID = '-';
-    private char FOOD = 'F';
+    public static final char SNAKE = 'o';
+    public static final char GRID = ' ';
+    public static final char FOOD = 'F';
+    private static final char OUT_BOUNDS = '!';
+    private final int UP = 119; // abs = 4
+    private final int DOWN = 115;
+    private final int LEFT = 97; // abs = 3
+    private final int RIGHT = 100;
 
 
-
-    public Game()
-    {
+    public Game() {
         grid = new TextGrid(20, 60);
-        // Any way to have a fullscreen title
-        //grid.setTitle("");
-        //grid.pause(1000);
-        //grid.setImage(new Location(0, 0), null);
-        //grid.close();
-        //grid = new Grid(60, 60);
 
         msElapsed = 0;
         grid.print();
@@ -45,33 +42,42 @@ public class Game
 
         snake = new Snake(new Location(10, 10), grid);
         grid.setScore(snake.getSize());
-        //for (int i=0; i<DEFAULT_SIZE-1; i++) {
-        //    snake.grow();
-        //}
-        play();
+
+        for (int i=0; i<DEFAULT_SIZE-1; i++) {
+            snake.grow();
+        }
+
+        start();
     }
 
     public static void main(String[] args) {
         Game gg = new Game();
     }
 
-    public void setGrid(TextGrid g) {
-        //grid.close();
-        grid = g;
-    }
+    /**
+     *  Runs the game
+     * [terminal code from: https://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/]
+     **/
+    public void start() {
 
-    public void play() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                restoreTerminal();
+            }
+        });
 
         try {
             grid.getListener().setTerminalToCBreak();
 
             // TODO : Just consolidate key and direction into only key
             int key = 100;
-            char direction = 'r';
+            int last = key;
+            //char direction = 'r';
             newLocation = new Location(snake.getLocation().getRow() + 1, snake.getLocation().getCol());
             snake.move(newLocation);
 
             while (true) {
+
                 try {
                     Thread.sleep(150);
                 } catch (Exception e) {
@@ -81,67 +87,49 @@ public class Game
 
                 if (System.in.available() > 0) {
                     key = System.in.read();
+                    System.in.skip(System.in.available());
                 }
 
                 populateScreen();
 
-                //int key = System.in.read();
-                //System.in.reset();
-
                 if (key != 27) {
-                    //System.out.println("key="+key);
+                    if (!nextMoveIsValid(key, last)) {
+                        key = last;
+                    }
 
-                    //System.out.println("DIRECTION="+direction);
-
-                    if (key == 119) { // up
-                        direction = 'u';
-                    } else if (key == 115) { // down
-                        direction = 'd';
-                    } else if (key == 97) { // left
-                        direction = 'l';
-                    } else if (key == 100) { // right (100)
-                        direction = 'r';
+                    if (key == UP) {
+                        newLocation = new Location(newLocation.getRow() - 1, newLocation.getCol());
+                    } else if (key == DOWN) {
+                        newLocation = new Location(newLocation.getRow() + 1, newLocation.getCol());
+                    } else if (key == LEFT) {
+                        newLocation = new Location(newLocation.getRow(), newLocation.getCol() - 1);
+                    } else if (key == RIGHT) {
+                        newLocation = new Location(newLocation.getRow(), newLocation.getCol() + 1);
                     }
                 }
 
-                if (direction == 'u') {
-                    newLocation = new Location(newLocation.getRow() - 1, newLocation.getCol());
-                } else if (direction == 'd') {
-                    newLocation = new Location(newLocation.getRow() + 1, newLocation.getCol());
-                } else if (direction == 'l') {
-                    newLocation = new Location(newLocation.getRow(), newLocation.getCol() - 1);
-                } else if (direction == 'r') {
-                    newLocation = new Location(newLocation.getRow(), newLocation.getCol() + 1);
-                }
+                //if (isMoveKey(key)) {
+                    last = key;
+                //}
+
                 char nextItem = grid.get(newLocation);
+
                 if (nextItem == FOOD) {
                     snake.grow();
                     grid.setScore(snake.getSize());
                     foodOnScreen --;
-                } else if (nextItem == SNAKE) {
-                    System.out.println("YOU LOSE!");
+                } else if (nextItem == SNAKE || nextItem == OUT_BOUNDS) { //bug: game ends if you press any other key
+                    //System.out.println("next="+SNAKE+" : "+OUT_BOUNDS + " | "+nextItem+" :: "+key);
+                    System.out.println("Game Over - You Lose!");
                     break;
                 }
 
                 snake.move(newLocation);
-                if (!grid.inbounds(snake.getSnake().get(0))) {
-                    System.out.println("YOU LOSE!");
-                    break;
-                }
 
                 for (int i=0; i<10; i++) {
                     System.out.println();
                 }
                 grid.print();
-
-                if ( System.in.available() != 0 ) {
-                    int c = System.in.read();
-                    if ( c == 0x1B ) {
-                        System.out.println(c);
-                        System.out.println("no longer available");
-                        break;
-                    }
-                }
             } // end while
         }
         catch (IOException e) {
@@ -150,18 +138,33 @@ public class Game
         catch (InterruptedException e) {
             System.err.println("InterruptedException");
         }
-        finally {
-            try {
-                grid.getListener().stty(grid.getListener().getConfig().trim() );
-            }
-            catch (Exception e) {
-                System.err.println("Exception restoring tty config");
-            }
-        }
     }
 
-    public void populateScreen()
-    {
+    /**
+     *  Checks if the snakes next location is valid
+     **/
+    private boolean nextMoveIsValid(int current, int next) {
+        if (current == LEFT && next == RIGHT ||
+            current == RIGHT && next == LEFT ||
+            current == UP && next == DOWN ||
+            current == DOWN && next == UP
+            ) {
+                return false;
+            }
+        return true;
+    }
+
+    /**
+     * Checks that a key is a movement key
+     **/
+    private boolean isMoveKey(int key) {
+        return key == UP || key == DOWN || key == RIGHT || key == LEFT;
+    }
+
+    /**
+     *  Places a piece of food ("F") at a random location on the screen
+     **/
+    private void populateScreen() {
         Random rand = new Random();
         int row = rand.nextInt(grid.getHeight());
         int col = rand.nextInt(grid.getWidth());
@@ -171,6 +174,19 @@ public class Game
         if (foodOnScreen < MAX_FOOD && grid.get(loc) == GRID) {
             grid.set(loc, FOOD);
             foodOnScreen ++;
+        }
+    }
+
+    /**
+     *  Takes terminal out of single-char mode
+     **/
+    private void restoreTerminal() {
+        System.out.println("Restoring terminal.");
+        try {
+            grid.getListener().stty(grid.getListener().getConfig().trim() );
+        }
+        catch (Exception e) {
+            System.err.println("Exception restoring tty config");
         }
     }
 
@@ -226,23 +242,6 @@ public class Game
                 updateTitle();
             }
             msElapsed += speed;
-        }
-    }*/
-/*
-    public void handleKeyPress()
-    {
-        // Reminder: make sure to have an error checker so player cant go off the screen
-        // Reminder: possible to check if game ended by simply try-catching the RuntimeException that occurs when the player tries to move out of bounds?
-        int key = grid.checkLastKeyPressed();
-
-        if (key == 38 && !(direction == 'd' && snake.getSize() > 1)) { // UP
-            direction = 'u';
-        } else if (key == 40 && !(direction == 'u' && snake.getSize() > 1)) { // DOWN
-            direction = 'd';
-        } else if (key == 37 && !(direction == 'r' && snake.getSize() > 1)) { // LEFT
-            direction = 'l';
-        } else if (key == 39 && !(direction == 'l' && snake.getSize() > 1)) { // RIGHT
-            direction = 'r';
         }
     }*/
 
@@ -345,26 +344,6 @@ public class Game
             }
         }
     }*/
-/*
-    public void updateScore()
-    {
-        if (snake.getSize() != oldSize) {
-            score += snake.getSize();
-        }
-        if (score < 0) {
-            score = 0;
-        }
-    }
-
-    public int getScore() {
-        return score;
-    }
-
-    public void updateTitle()
-    {
-        updateScore();
-        grid.setTitle("Size: " + snake.getSize() + " | Food needed to grow: " + snake.getStomachSize() + "/10 | Score: "+score+ " | Invincibility: "+invincibility);
-    } */
 /*
     public static void test()
     {

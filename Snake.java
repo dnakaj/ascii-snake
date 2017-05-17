@@ -4,8 +4,8 @@ public class Snake extends GameObject {
 
     private ArrayList<Location> snake = new ArrayList<Location>(1);
     private int stomachSize = 0; // every time stomach == 10, snake grows
-    private final char SNAKE = 'o';
-    private final char GRID = '-';
+    private final char SNAKE = Game.SNAKE;
+    private final char GRID = Game.GRID;
 
     public Snake(Location loc, TextGrid g) {
         super(loc, g);

@@ -9,39 +9,6 @@ public class ConsoleStty {
     public static String getConfig() {
         return ttyConfig;
     }
-/*
-    public ConsoleStty() {
-        try {
-            setTerminalToCBreak();
-
-            int i=0;
-            while (true) {
-                System.out.println("read="+System.in.read());
-                if ( System.in.available() != 0 ) {
-                    int c = System.in.read();
-                    if ( c == 0x1B ) {
-
-                        //System.out.println("no longer available");
-                        break;
-                    }
-                }
-            } // end while
-        }
-        catch (IOException e) {
-            System.err.println("IOException");
-        }
-        catch (InterruptedException e) {
-            System.err.println("InterruptedException");
-        }
-        finally {
-            try {
-                stty( ttyConfig.trim() );
-            }
-            catch (Exception e) {
-                System.err.println("Exception restoring tty config");
-            }
-        }
-    }*/
 
     public static void setTerminalToCBreak() throws IOException, InterruptedException {
 

@@ -6,7 +6,7 @@ public class TextGrid {
     private int height;
     private int width;
     char[][] grid;
-    private char GRID = '-';
+    private char GRID = Game.GRID;
     private final String HEADER_TEXT = "Snake : (c) Dan Nakajima 2017";
     private String SIZE_TEXT = "Size: ";
 
